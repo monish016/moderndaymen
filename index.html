@@ -985,7 +985,7 @@
     window.addEventListener('resize', function () { if (!open) { H = height(); render(H); } });
   })();
 
-  /* ---------- forms: inline validity, sends in place, the reader never leaves the page ---------- */
+  /* ---------- forms: inline validity, subscribes to the Klaviyo list in place; FormSubmit is the fallback ---------- */
   (function () {
     var toast = document.getElementById('toast');
     function say(msg) { toast.textContent = msg; toast.classList.add('show'); setTimeout(function () { toast.classList.remove('show'); }, 2800); }
@@ -997,20 +997,31 @@
         var b = f.querySelector('button[type=submit]');
         if (!window.fetch) { if (b) b.classList.add('busy'); say('Sending the prologue to ' + input.value); return; }
         e.preventDefault();
+        var honey = f.querySelector('input[name=_honey]');
+        if (honey && honey.value) { f.dataset.sent = '1'; return; }
         if (b) b.classList.add('busy');
-        fetch(f.action.replace('formsubmit.co/', 'formsubmit.co/ajax/'), {
-          method: 'POST', body: new FormData(f), headers: { 'Accept': 'application/json' }
+        fetch('https://a.klaviyo.com/client/subscriptions/?company_id=S3jGsv', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'revision': '2024-10-15' },
+          body: JSON.stringify({
+            data: {
+              type: 'subscription',
+              attributes: {
+                custom_source: f.id === 'form-sheet' ? 'moderndaymen.in prologue sheet' : 'moderndaymen.in prologue form',
+                profile: { data: { type: 'profile', attributes: { email: input.value } } }
+              },
+              relationships: { list: { data: { type: 'list', id: 'Vnbcpi' } } }
+            }
+          })
         }).then(function (r) {
-          if (!r.ok) throw 0; return r.json();
-        }).then(function (d) {
-          if (!d || String(d.success) !== 'true') throw 0;
+          if (!r.ok) throw 0;
           f.dataset.sent = '1';
           if (b) { b.classList.remove('busy'); b.querySelector('span').textContent = 'Sent. Check your inbox'; b.disabled = true; }
           input.disabled = true;
           say('The prologue is on its way to ' + input.value);
         }).catch(function () {
           if (b) b.classList.remove('busy');
-          f.submit();                            // the plain POST still delivers when the inline path can't
+          f.submit();                            // the plain FormSubmit POST still captures when Klaviyo can't
         });
       });
     });
