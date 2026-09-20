@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://moderndaymen.in/sitemap.xml
